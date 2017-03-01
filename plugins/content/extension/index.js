@@ -170,80 +170,69 @@ function contentDeletionHook(contentType, data, cb) {
  * @param {callback} cb
  */
 function contentCreationHook (contentType, data, cb) {
-  // in creation, data[0] is the content
   var contentData = data[0];
-  if (!contentData._courseId) {
-    // cannot do anything for unknown courses
+
+  if (!contentData._courseId) { // cannot do anything for unknown courses
     return cb(null, data);
   }
-
-  // Start the async bit
   async.series([
     function(callback) {
-      if (contentType == 'component') {
-        // Check that any globals for this component are set
-        database.getDatabase(function (error, db) {
-          if (error) {
-            return callback(error);
-          }
-          
-          db.retrieve('componenttype', {component: contentData._component}, function(err, results) {
-            if (err) {
-              return callback(err);
-            }
-            
-            if (!results || results.length == 0) {
-              return callback('Unexpected number of componentType records');
-            }
-            
-            var componentType = results[0]._doc;
-            
-            if (componentType.globals) {
-              // The component has globals.
-              database.getDatabase(function(error, tenantDb) {
-                // Add the globals to the course.
-                tenantDb.retrieve('course', {_id: contentData._courseId}, function(err, results) {
-                  if (err) {
-                    return callback(err);
-                  }
-                  
-                  var key = '_' + componentType.component;
-                  var courseDoc = results[0]._doc;
-                  var courseGlobals = courseDoc._globals
-                    ? courseDoc._globals
-                    : {};
-                    
-                  // Create the _components global object.
-                  if (!courseGlobals._components) {
-                    courseGlobals._components = {};
-                  }
-                  
-                  if (!courseGlobals._components[key]) {
-                    // The global JSON does not exist for this component so set the defaults.
-                    var componentGlobals = {};
-                    
-                    for (var prop in componentType.globals) {
-                      if (componentType.globals.hasOwnProperty(prop)) {
-                        componentGlobals[prop] = componentType.globals[prop].default;
-                      }
-                    }
-                    
-                    courseGlobals._components[key] = componentGlobals;
-
-                    tenantDb.update('course', { _id: contentData._courseId }, { _globals: courseGlobals }, callback);
-                  } else {
-                    return callback(null);
-                  }
-                });  
-              });              
-            } else {
-              return callback(null)
-            }
-          });
-        }, configuration.getConfig('dbName'));
-      } else {
+      if (contentType !== 'component') {
         return callback(null);
       }
+      // Check that any globals for this component are set
+      database.getDatabase(function (error, db) {
+        if (error) {
+          return callback(error);
+        }
+        db.retrieve('componenttype', {component: contentData._component}, function(err, results) {
+          if (err) {
+            return callback(err);
+          }
+          if (!results || results.length == 0) {
+            return callback('Unexpected number of componentType records');
+          }
+
+          var componentType = results[0]._doc;
+
+          if (!componentType.globals) {
+            return callback(null);
+          }
+          // The component has globals.
+          database.getDatabase(function(error, tenantDb) {
+            // Add the globals to the course.
+            tenantDb.retrieve('course', { _id: contentData._courseId }, function(err, results) {
+              if (err) {
+                return callback(err);
+              }
+              var key = '_' + componentType.component;
+              var courseDoc = results[0]._doc;
+              var courseGlobals = courseDoc._globals ? courseDoc._globals : {};
+
+              if (courseGlobals._components && courseGlobals._components[key]) {
+                return callback(null);
+              }
+
+              // Create the _components global object.
+              if (!courseGlobals._components) {
+                courseGlobals._components = {};
+              }
+              // globals don't exist for this component so set the defaults
+              var componentGlobals = {};
+
+              for (var prop in componentType.globals) {
+                if (componentType.globals.hasOwnProperty(prop)) {
+                  componentGlobals[prop] = componentType.globals[prop].default;
+                }
+              }
+
+              courseGlobals._components[key] = componentGlobals;
+
+              tenantDb.update('course', { _id: contentData._courseId }, { _globals: courseGlobals }, callback);
+            });
+          });
+        });
+      }, configuration.getConfig('dbName'));
     },
     function(callback) {
       getEnabledExtensions(contentData._courseId, function (error, extensions) {
