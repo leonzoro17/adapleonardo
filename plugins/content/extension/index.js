@@ -229,14 +229,8 @@ function contentCreationHook (contentType, data, cb) {
                     }
                     
                     courseGlobals._components[key] = componentGlobals;
-                    
-                    tenantDb.update('course', {_id: contentData._courseId}, {_globals: courseGlobals}, function(err, doc) {
-                      if (err) {
-                        return callback(err);
-                      } else {
-                        return callback(null);
-                      }
-                    });
+
+                    tenantDb.update('course', { _id: contentData._courseId }, { _globals: courseGlobals }, callback);
                   } else {
                     return callback(null);
                   }
