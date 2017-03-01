@@ -3,28 +3,30 @@
  * Extension content plugin
  *
  */
+var _ = require('underscore');
+var async = require('async');
+var bower = require('bower');
+var fs = require('fs');
+var mkdirp = require('mkdirp');
+var ncp = require('ncp').ncp;
+var path = require('path');
+var rimraf = require('rimraf');
+var util = require('util');
 
-var origin = require('../../../'),
-    contentmanager = require('../../../lib/contentmanager'),
-    usermanager = require('../../../lib/usermanager'),
-    rest = require('../../../lib/rest'),
-    BowerPlugin = require('../bower'),
-    ContentPlugin = contentmanager.ContentPlugin,
-    ContentTypeError = contentmanager.errors.ContentTypeError,
-    configuration = require('../../../lib/configuration'),
-    database = require('../../../lib/database'),
-    helpers = require('../../../lib/helpers'),
-    logger = require('../../../lib/logger'),
-    defaultOptions = require('./defaults.json'),
-    bower = require('bower'),
-    rimraf = require('rimraf'),
-    async = require('async'),
-    fs = require('fs'),
-    ncp = require('ncp').ncp,
-    mkdirp = require('mkdirp'),
-    _ = require('underscore'),
-    util = require('util'),
-    path = require('path');
+var BowerPlugin = require('../bower');
+var database = require('../../../lib/database');
+var configuration = require('../../../lib/configuration');
+var contentmanager = require('../../../lib/contentmanager');
+var helpers = require('../../../lib/helpers');
+var logger = require('../../../lib/logger');
+var origin = require('../../../');
+var rest = require('../../../lib/rest');
+var usermanager = require('../../../lib/usermanager');
+
+var ContentPlugin = contentmanager.ContentPlugin;
+var ContentTypeError = contentmanager.errors.ContentTypeError;
+
+var defaultOptions = require('./defaults.json');
 
 var bowerConfig = {
   type: 'extensiontype',
