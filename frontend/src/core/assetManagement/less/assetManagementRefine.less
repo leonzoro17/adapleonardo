@@ -59,7 +59,7 @@
     ~ button.clear {
       position: absolute;
       top: 0;
-      left: 200px;
+      left: 170px;
       height: @input-text-actual-height;
       padding: 10px;
       width: auto;
@@ -182,7 +182,9 @@
   overflow-y: auto;
 
   .modules {
+    width: @sidebar-width;
     color: @font-color;
+
     > .module {
       &.hide {
         // icon
@@ -292,9 +294,6 @@
         padding: 0 12px 15px 20px;
         .input {
           margin-bottom: 0;
-          button {
-            right: 10px;
-          }
         }
       }
 
@@ -338,7 +337,7 @@
       .input {
         input {
           // TODO do something dynamic...
-          width: 210px;
+          width: 185px;
         }
       }
     }
