@@ -60,7 +60,7 @@ define(function(require){
           if (typeof date == 'undefined') {
             return '-';
           }
-          
+
           return moment(date).format(format);
         },
         formatDuration: function(duration) {
@@ -100,6 +100,21 @@ define(function(require){
           } else {
             return block.inverse(this);
           }
+        },
+        getUserNameFromId: function(id) {
+          if(Origin.sessionModel.get('user').get('_id') === id) {
+            var user = Origin.sessionModel.get('user');
+          } else if(Origin.sessionModel.get('users')) {
+            var user = Origin.sessionModel.get('users').findWhere({ _id:id });
+          };
+          if(!user) return '';
+
+          var names = [];
+
+          if(user.get('firstName')) names.push(user.get('firstName'));
+          if(user.get('lastName')) names.push(user.get('lastName'));
+
+          return (names.length < 1) ? user.get('email') : names.join(' ');
         },
         selected: function(option, value){
             if (option === value) {
@@ -210,11 +225,11 @@ define(function(require){
           var fileName = urlSplit[urlSplit.length - 1];
           // Get courseAsset model
           var courseAsset = Origin.editor.data.courseAssets.findWhere({_fieldName: fileName});
-          
+
           if (courseAsset) {
             var courseAssetId = courseAsset.get('_assetId');
 
-            return '/api/asset/serve/' + courseAssetId;  
+            return '/api/asset/serve/' + courseAssetId;
           } else {
             return '';
           }
@@ -261,43 +276,43 @@ define(function(require){
         },
 
         copyStringToClipboard: function(data) {
-                 
+
           var textArea = document.createElement("textarea");
-          
+
           textArea.value = data;
 
           // Place in top-left corner of screen regardless of scroll position.
           textArea.style.position = 'fixed';
           textArea.style.top = 0;
           textArea.style.left = 0;
-    
+
           // Ensure it has a small width and height. Setting to 1px / 1em
           // doesn't work as this gives a negative w/h on some browsers.
           textArea.style.width = '2em';
           textArea.style.height = '2em';
-    
+
           // We don't need padding, reducing the size if it does flash render.
           textArea.style.padding = 0;
-    
+
           // Clean up any borders.
           textArea.style.border = 'none';
           textArea.style.outline = 'none';
           textArea.style.boxShadow = 'none';
-    
+
           // Avoid flash of white box if rendered for any reason.
           textArea.style.background = 'transparent';
-    
+
           document.body.appendChild(textArea);
-    
+
           textArea.select();
-    
+
           var success = document.execCommand('copy');
 
           document.body.removeChild(textArea);
-          
+
           return success;
         },
-        
+
         validateCourseContent: function(currentCourse) {
           // Let's do a standard check for at least one child object
           var containsAtLeastOneChild = true;
