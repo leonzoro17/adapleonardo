@@ -352,5 +352,7 @@
   "app.visitpluginhomepage": "Visit plugin homepage",
   "app.greeting": "Hi",
   "app.emaillogotext": "ADAPT",
-  "app.emailfooter": "Sent by Adapt Learning."
+  "app.emailfooter": "Sent by Adapt Learning.",
+  "app.mailererrorto": "Can't send email to '%{address}': not a valid email address",
+  "app.mailererrorfrom": "Can't send email from '%{address}': not a valid email address",
 }
