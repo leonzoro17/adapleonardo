@@ -184,10 +184,10 @@ function initialize () {
 
                     res.statusCode = 200;
                     return res.json({success: true});
-                  });  
+                  });
                 });
               });
-            }, configuration.getConfig('dbName'));            
+            }, configuration.getConfig('dbName'));
           }
         });
       });
