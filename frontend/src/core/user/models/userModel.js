@@ -49,7 +49,7 @@ define(function(require) {
     },
 
     setLockStatus: function(model, value, options) {
-      // HACK MAX_LOGIN_ATTEMPTS doesn't seem to be set anywhere other than plugins/auth/local:line-30
+      // FIXME #1354
       var MAX_LOGIN_ATTEMPTS = 3;
       var newLocked = this.get('failedLoginCount') >= MAX_LOGIN_ATTEMPTS;
       if(newLocked !== this.get('_isLocked')) {

@@ -66,40 +66,42 @@ require([
     ImageReady,
     MediaElement
 ) {
-
-  // Read in the configuration values/constants
-  $.getJSON('config/config.json', function(configData) {
-    Origin.constants = configData;
-
-    var locale = localStorage.getItem('lang') || 'en';
-
-    // Get the language file
-    $.getJSON('lang/' + locale, function(data) {
-      // Instantiate Polyglot with phrases
-      window.polyglot = new Polyglot({phrases: data});
-
-      Origin.sessionModel = new SessionModel();
-
+  loadServerConfig(function() {
+    loadLanguageData(function() {
+      loadSessionData(function() {
       Origin.router = new Router();
-
-      Origin.sessionModel.fetch({
-        success: function(data) {
-          // This callback is called from the schemasModel.js in scaffold as the schemas
-          // need to load before the app loads
+        // FIXME the following is called from schemasModel as schemas need to load before the app
           Origin.trigger('app:userCreated', function() {
-
               $('#app').before(new NavigationView({model: Origin.sessionModel}).$el);
               Origin.trigger('app:dataReady');
-              // Defer here is good - give anything tapping in app:dataReady event
-              // time to do their thang!
-              _.defer(function() {
-                  Origin.initialize();
+          // defer to give anything tapping app:dataReady time to execute
+          _.defer(Origin.initialize);
               });
           });
-          
-        }
       });
     });
   });
   
+function loadServerConfig(callback) {
+  // Read in the configuration values/constants
+  $.getJSON('config/config.json', function(configData) {
+    // TODO name doesn't seem transparent enough
+    Origin.constants = configData;
+    callback.call(this);
 });
+}
+
+// initialises the language and loads polyglot
+function loadLanguageData(callback) {
+  var locale = localStorage.getItem('lang') || 'en';
+  $.getJSON('lang/' + locale, function(data) {
+    window.polyglot = new Polyglot({ phrases: data });
+    callback();
+  });
+}
+
+function loadSessionData(callback) {
+  Origin.sessionModel = new SessionModel();
+  Origin.sessionModel.fetch();
+  Origin.on('sessionModel:initialised', callback);
+}

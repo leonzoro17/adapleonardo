@@ -4,7 +4,7 @@ define(function(require){
   var OriginView = require('coreJS/app/views/originView');
   var Helpers = require('coreJS/app/helpers');
   var UserCollection = require('../collections/userCollection.js');
-  var UserModel = require('../models/userModel.js');
+  var UserModel = require('coreJS/user/models/userModel');
   var UserView = require('../views/userView.js');
 
   var UserManagementView = OriginView.extend({
