@@ -64,7 +64,7 @@ define(function(require) {
 
       var userModel = this.model;
 
-      userModel.login(inputUsernameEmail, inputPassword, shouldPersist);
+      userModel.logIn(inputUsernameEmail, inputPassword, shouldPersist);
     },
 
     loginFailed: function(errorCode) {

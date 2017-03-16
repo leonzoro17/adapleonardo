@@ -19,9 +19,6 @@ define(function(require) {
   });
 
   Origin.on('router:user', function(location, subLocation, action) {
-    console.log(location, subLocation, action);
-    console.log(Origin.location);
-    
     var currentView;
     var settings = {};
 
@@ -33,7 +30,7 @@ define(function(require) {
         currentView = LoginView;
         break;
       case 'logout':
-        Origin.sessionModel.logout();
+        Origin.sessionModel.logOut();
         break;
       case 'forgot':
         Origin.trigger('sidebar:sidebarContainer:hide');
