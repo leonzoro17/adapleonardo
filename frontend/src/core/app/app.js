@@ -69,39 +69,39 @@ require([
   loadServerConfig(function() {
     loadLanguageData(function() {
       loadSessionData(function() {
-      Origin.router = new Router();
+        Origin.router = new Router();
         // FIXME the following is called from schemasModel as schemas need to load before the app
-          Origin.trigger('app:userCreated', function() {
-              $('#app').before(new NavigationView({model: Origin.sessionModel}).$el);
-              Origin.trigger('app:dataReady');
+        Origin.trigger('app:userCreated', function() {
+          $('#app').before(new NavigationView({model: Origin.sessionModel}).$el);
+          Origin.trigger('app:dataReady');
           // defer to give anything tapping app:dataReady time to execute
           _.defer(Origin.initialize);
-              });
-          });
+        });
       });
     });
   });
   
-function loadServerConfig(callback) {
-  // Read in the configuration values/constants
-  $.getJSON('config/config.json', function(configData) {
-    // TODO name doesn't seem transparent enough
-    Origin.constants = configData;
-    callback.call(this);
+  function loadServerConfig(callback) {
+    // Read in the configuration values/constants
+    $.getJSON('config/config.json', function(configData) {
+      // TODO name doesn't seem transparent enough
+      Origin.constants = configData;
+      callback.call(this);
+    });
+  }
+
+  // initialises the language and loads polyglot
+  function loadLanguageData(callback) {
+    var locale = localStorage.getItem('lang') || 'en';
+    $.getJSON('lang/' + locale, function(data) {
+      window.polyglot = new Polyglot({ phrases: data });
+      callback();
+    });
+  }
+
+  function loadSessionData(callback) {
+    Origin.sessionModel = new SessionModel();
+    Origin.sessionModel.fetch();
+    Origin.on('sessionModel:initialised', callback);
+  }
 });
-}
-
-// initialises the language and loads polyglot
-function loadLanguageData(callback) {
-  var locale = localStorage.getItem('lang') || 'en';
-  $.getJSON('lang/' + locale, function(data) {
-    window.polyglot = new Polyglot({ phrases: data });
-    callback();
-  });
-}
-
-function loadSessionData(callback) {
-  Origin.sessionModel = new SessionModel();
-  Origin.sessionModel.fetch();
-  Origin.on('sessionModel:initialised', callback);
-}
