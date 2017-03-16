@@ -3,6 +3,9 @@ define(function(require) {
 
   var Backbone = require('backbone');
   var Origin = require('coreJS/app/origin');
+  // TODO move this into core
+  var UserCollection = require('../../../plugins/userManagement/collections/userCollection');
+  var UserModel = require('./userModel');
 
   var SessionModel = Backbone.Model.extend({
 
@@ -18,21 +21,48 @@ define(function(require) {
 
     initialize: function() {},
 
-    logout: function () {
-      var self = this;
-
+    login: function(username, password, shouldPersist) {
       $.post(
-        '/api/logout',
-        function() {
-          self.set('isAuthenticated', false);
-          self.set('id', '');
-          self.set('tenantId', '');
-          self.set('email', '');
-          self.set('permissions', []);
-          self.set('_canRevert', false);
+        '/api/login',
+        {
+          email: username,
+          password: password,
+          shouldPersist: shouldPersist
+        },
+        _.bind(function(jqXHR, textStatus, errorThrown) {
+          this.fetch({
+            success: _.bind(function() {
+              this.onLogInSuccess(jqXHR);
+            }, this)
+          });
+        }, this)
+      )
+        .fail(_.bind(this.onLogInError, this));
+    },
 
-          Origin.trigger('login:changed');
-          Origin.router.navigate('#/user/login', {trigger: true});
+    logout: function() {
+      $.post('/api/logout', _.bind(function() {
+        this.set(this.defaults);
+        Origin.trigger('login:changed');
+        Origin.router.navigate('#/user/login', { trigger: true });
+      }, this))
+        .fail(onAjaxFail);
+    },
+
+    onUserFetchSuccess: function() {
+      Origin.trigger('user:updated');
+      if(!Origin.permissions.hasPermissions(["{{tenantid}}/user:read"])) {
+        Origin.trigger('sessionModel:initialised');
+        return;
+      }
+      var users = new UserCollection();
+      users.fetch({
+        success: _.bind(function(collection) {
+          self.set('users', users);
+          Origin.trigger('sessionModel:initialised');
+          Origin.trigger('login:newSession');
+        }, this),
+        error: this.onFetchError
       });
     },
 
@@ -47,7 +77,7 @@ define(function(require) {
           if (jqXHR.success) {
             self.set('id', jqXHR.id);
             self.set('tenantId', jqXHR.tenantId);
-            self.set('email', jqXHR.email);  
+            self.set('email', jqXHR.email);
             self.set('isAuthenticated', jqXHR.success);
             self.set('permissions', jqXHR.permissions);
 

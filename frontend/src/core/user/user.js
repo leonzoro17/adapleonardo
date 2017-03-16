@@ -1,6 +1,5 @@
 // LICENCE https://github.com/adaptlearning/adapt_authoring/blob/master/LICENSE
 define(function(require) {
-
   var Origin = require('coreJS/app/origin');
   var LoginView = require('coreJS/user/views/loginView');
   var UserProfileView = require('coreJS/user/views/userProfileView');
@@ -40,37 +39,41 @@ define(function(require) {
       case 'reset':
         Origin.trigger('sidebar:sidebarContainer:hide');
         currentView = ResetPasswordView;
-        break;      
+        break;
       case 'profile':
         settings.authenticate = true;
-        Origin.trigger('location:title:update', {title: window.polyglot.t('app.editprofiletitle')});        
+        Origin.trigger('location:title:update', { title: window.polyglot.t('app.editprofiletitle') });
         currentView = UserProfileView;
         break;
     }
 
-    if (currentView) {
-      switch (location) {
-        case 'profile':
-          var profile = new UserProfileModel(); 
-          profile.fetch({
-            success: function() {
-              Origin.sidebar.addView(new UserProfileSidebarView().$el);
-              Origin.router.createView(currentView, {model: profile}, settings);
-            }
-          });
-          break;
-        case 'reset':
-          var reset = new UserPasswordResetModel({token: subLocation});
-          reset.fetch({
-            success: function() {
-              Origin.router.createView(currentView, {model: reset}, settings);    
-            }
-          });
-          break;
-        default:
-          Origin.router.createView(currentView, {model: Origin.sessionModel}, settings);  
-      }
+    if(currentView) {
+      loadView(currentView);
     }
   });
+});
 
-})
+function loadView(view) {
+  var mod = Origin.location.module;
+  if(mod === 'profile') {
+    var model = new UserProfileModel();
+    profile.fetch({
+      success: function() {
+        Origin.sidebar.addView(new UserProfileSidebarView().$el);
+        Origin.router.createView(currentView, { model: model }, settings);
+      }
+    });
+    return;
+  }
+  if(mod === 'reset') {
+    var model = new UserPasswordResetModel({ token: Origin.location.id });
+    reset.fetch({
+      success: function() {
+        Origin.router.createView(currentView, { model: model }, settings);
+      }
+    });
+    return;
+  }
+  // if none of the above...
+  Origin.router.createView(currentView, { model: Origin.sessionModel }, settings);
+}
