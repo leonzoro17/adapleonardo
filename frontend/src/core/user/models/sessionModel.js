@@ -19,99 +19,119 @@ define(function(require) {
       user: null
     },
 
-    fetch: function(options) {
+    fetch: function(opts) {
       var self = this;
-      // hijack success callback
-      options = options || {};
+      var options = opts || {};
       var successCb = options.success;
+      // hijack success callback
       options.success = function() {
-        // keep existing 'this' scope
-        if(successCb) successCb.call(this);
-
-        if(!self.get('user') && self.get('id')) {
-          self.set('user', new UserModel({ _id: self.get('id') }));
-        }
-        if(self.get('user')) {
-          self.get('user').fetch({
-            success: function() {
-              Origin.trigger('user:updated');
-              // get users
-              if(Origin.permissions.hasPermissions(["{{tenantid}}/user:read"])){
-                var users = new UserCollection();
-                users.fetch({
-                  success: _.bind(function(collection) {
-                    self.set('users', users);
-                    Origin.trigger('sessionModel:initialised login:newSession');
-                  }, this),
-                  error: function(data, response) {
-                    Origin.Notify.alert({
-                      type: 'error',
-                      title: response.statusText,
-                      text: "Couldn't fetch users' data.<br/>(" + response.responseJSON.statusCode + ")"
-                    });
-                  }
-                });
-              } else {
-                Origin.trigger('sessionModel:initialised');
-              }
-            },
-            error: function(data, response) {
-              Origin.Notify.alert({
-                type: 'error',
-                title: response.statusText,
-                text: "Couldn't fetch user's data.<br/>(" + response.responseJSON.statusCode + ")"
-              });
-            }
-          });
-        } else {
-          Origin.trigger('sessionModel:initialised');
-        }
+        self.fetchCallbackHijacker(successCb, this);
       };
-
       Backbone.Model.prototype.fetch.call(this, options);
     },
 
-    logout: function () {
-      $.post('/api/logout', _.bind(function() {
-        this.set(this.defaults);
-        Origin.trigger('login:changed');
-        Origin.router.navigate('#/user/login', { trigger: true });
-      }, this));
+    fetchCallbackHijacker: function(originalCb, scope) {
+      if(originalCb) {
+        // keep existing 'this' scope
+        originalCb.call(scope);
+      }
+      if(!this.get('user')) {
+        // ???
+        if(!this.get('id')) {
+          return Origin.trigger('sessionModel:initialised');
+        }
+        this.set('user', new UserModel({ _id: this.get('id') }));
+      }
+      // get user data
+      this.fetchUser(function(error) {
+        if(error) {
+          return Origin.trigger('sessionModel:initialised');
+        }
+        this.fetchUsers(function() {
+          Origin.trigger('sessionModel:initialised login:newSession');
+        });
+      });
     },
 
-    login: function (username, password, shouldPersist) {
-      $.ajax({
-        method: 'post',
-        url: '/api/login',
-        data: { email:username, password:password, shouldPersist:shouldPersist },
-        success: _.bind(function (jqXHR, textStatus, errorThrown) {
-          this.fetch({
-            success: _.bind(function() {
-              if (jqXHR.success) {
-                this.set({
-                  id: jqXHR.id,
-                  tenantId: jqXHR.tenantId,
-                  email: jqXHR.email,
-                  isAuthenticated: jqXHR.success,
-                  permissions: jqXHR.permissions
-                });
-                Origin.trigger('login:changed');
-                Origin.trigger('schemas:loadData', function() {
-                  Origin.router.navigate('#/dashboard', { trigger: true });
-                });
-              }
-            }, this)
-          });
-        },this),
-        error: function (jqXHR, textStatus, errorThrown) {
-          var errorCode = 1;
-          if (jqXHR.responseJSON && jqXHR.responseJSON.errorCode) {
-            errorCode = jqXHR.responseJSON.errorCode;
+    fetchUser: function(cb) {
+      this.get('user').fetch({
+        success: function() {
+          Origin.trigger('user:updated');
+          if(!Origin.permissions.hasPermissions(["{{tenantid}}/user:read"])) {
+            cb.call(this, new Error('Invalid permissions to view user data'));
           }
-          Origin.trigger('login:failed', errorCode);
-        }
+          cb.call(this);
+        },
+        error: this.onFetchUserError
       });
-    }
+    },
+
+    fetchUsers: function() {
+      (new UserCollection()).fetch({
+        success: _.bind(function(collection) {
+          this.set('users', collection);
+        }, this),
+        error: this.onFetchUserError
+      });
+    },
+
+    logIn: function (username, password, shouldPersist) {
+      var data = {
+        email: username,
+        password: password,
+        shouldPersist: shouldPersist
+      };
+      $.post('/api/login', data, _.bind(this.onLogInSuccess, this))
+        .fail(this.onLogError);
+    },
+
+    logOut: function() {
+      $.post('/api/logout', _.bind(this.onLogOutSuccess, this))
+        .fail(this.onLogError);
+    },
+
+    /**
+    * Error handling
+    */
+
+    onFetchUserError: function(data, response) {
+      Origin.Notify.alert({
+        type: 'error',
+        title: response.statusText,
+        text: "Couldn't fetch user data.<br/>(" + response.responseJSON.statusCode + ")"
+      });
+    },
+
+    onLogInSuccess: function (jqXHR, textStatus, errorThrown) {
+      this.fetch({
+        success: _.bind(function() {
+          if (jqXHR.success) {
+            this.set({
+              id: jqXHR.id,
+              tenantId: jqXHR.tenantId,
+              email: jqXHR.email,
+              isAuthenticated: jqXHR.success,
+              permissions: jqXHR.permissions
+            });
+            Origin.trigger('login:changed');
+            Origin.trigger('schemas:loadData', function() {
+              Origin.router.navigate('#/dashboard', { trigger: true });
+            });
+          }
+        }, this)
+      });
+    },
+
+    onLogOutSuccess: function() {
+      this.set(this.defaults);
+      Origin.trigger('login:changed');
+      Origin.router.navigate('#/user/login', { trigger: true });
+    },
+
+    onLogError: function(jqXHR, textStatus, errorThrown) {
+      var errorCode = jqXHR.responseJSON && jqXHR.responseJSON.errorCode || 1;
+      Origin.trigger('login:failed', errorCode);
+    },
   });
 
   return SessionModel;
