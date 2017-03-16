@@ -4,6 +4,7 @@ define(function(require) {
 
   var UserModel = Backbone.Model.extend({
     idAttribute: '_id',
+    url: '/api/user',
 
     initialize: function() {
       this.on('change:globalData', this.onGlobalDataChanged);
