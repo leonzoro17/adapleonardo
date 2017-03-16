@@ -44,12 +44,11 @@ define(function(require) {
       }
       // get user data
       this.fetchUser(function(error) {
+        Origin.trigger('sessionModel:initialised');
         if(error) {
-          return Origin.trigger('sessionModel:initialised');
+          return;
         }
-        this.fetchUsers(function() {
-          Origin.trigger('sessionModel:initialised login:newSession');
-        });
+        Origin.trigger('login:newSession');
       });
     },
 
