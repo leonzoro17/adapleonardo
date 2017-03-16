@@ -1,24 +1,29 @@
 // LICENCE https://github.com/adaptlearning/adapt_authoring/blob/master/LICENSE
 define(function(require) {
-  var Backbone = require('backbone');
   var Origin = require('coreJS/app/origin');
   var OriginView = require('coreJS/app/views/originView');
 
   var LoginView = OriginView.extend({
-
     className: 'login',
-
     tagName: "div",
 
     events: {
-      'keydown #login-input-username' : 'clearErrorStyling',
-      'keydown #login-input-password' : 'clearErrorStyling',
-      'click .login-form-submit'      : 'submitLoginDetails',
-      'click button.dash'             : 'goToDash'
+      'keydown #login-input-username': 'onKeyDown',
+      'keydown #login-input-password': 'onKeyDown',
+      'click .login-form-submit': 'onSubmitClicked',
+      'click button.dash': 'onDashboardButtonClicked'
+    },
+
+    errorCodes: {
+      ERR_INVALID_CREDENTIALS: 1,
+      ERR_ACCOUNT_LOCKED: 2,
+      ERR_MISSING_FIELDS: 3,
+      ERR_TENANT_DISABLED: 4,
+      ERR_ACCOUNT_INACTIVE: 5
     },
 
     preRender: function() {
-      this.listenTo(Origin, 'login:failed', this.loginFailed, this);
+      this.listenTo(Origin, 'login:failed', this.onLoginFailed, this);
     },
 
     postRender: function() {
@@ -26,81 +31,71 @@ define(function(require) {
       Origin.trigger('login:loaded');
     },
 
-    goToDash: function(e) {
+    clearErrorStyling: function(e) {
+      $('#login-input-username').removeClass('input-error');
+      $('#loginError').addClass('display-none');
+    },
+
+    submitLogInDetails: function() {
+      var inputUsernameEmail = $.trim(this.$("#login-input-username").val());
+      var inputPassword = $.trim(this.$("#login-input-password").val());
+      var shouldPersist = this.$('#remember-me').prop('checked');
+      //validate
+      if (inputUsernameEmail === '' || inputPassword === '') {
+        this.onLoginFailed(this.errorCodes.ERR_MISSING_FIELDS);
+        return;
+      }
+      this.model.logIn(inputUsernameEmail, inputPassword, shouldPersist);
+    },
+
+    getErrorMessage: function(errorCode) {
+      switch (errorCode) {
+        case this.errorCodes.ERR_INVALID_CREDENTIALS:
+        case this.errorCodes.ERR_MISSING_FIELDS:
+          return window.polyglot.t('app.invalidusernameorpassword');
+        case this.errorCodes.ERR_ACCOUNT_LOCKED:
+          return window.polyglot.t('app.accountislocked');
+        case this.errorCodes.ERR_TENANT_DISABLED:
+          return window.polyglot.t('app.tenantnotenabled');
+        case this.errorCodes.ERR_ACCOUNT_INACTIVE:
+          return window.polyglot.t('app.accountnotactive');
+      }
+    },
+
+    /**
+    * Event handling
+    */
+
+    onDashboardButtonClicked: function(e) {
       e && e.preventDefault();
       Origin.router.navigate('#/dashboard', { trigger: true });
     },
 
-    handleEnterKey: function(e) {
-      var key = e.charCode ? e.charCode : e.keyCode ? e.keyCode : 0;
-
-      if (key == 13) {
-        e.preventDefault();
-        this.submitLoginDetails();
-      }
-    },
-
-    clearErrorStyling: function(e) {
-      $('#login-input-username').removeClass('input-error');
-      $('#loginError').addClass('display-none');
-
-      this.handleEnterKey(e);
-    },
-
-    submitLoginDetails: function(e) {
+    onSubmitClicked: function(e) {
       e && e.preventDefault();
-
-      var inputUsernameEmail = $.trim(this.$("#login-input-username").val());
-      var inputPassword = $.trim(this.$("#login-input-password").val());
-      var shouldPersist = this.$('#remember-me').prop('checked');
-
-      // Validation
-      if (inputUsernameEmail === '' || inputPassword === '') {
-        this.loginFailed(LoginView.ERR_MISSING_FIELDS);
-        return false;
-      } else {
-        $('#login-input-username').removeClass('input-error');
-      }
-
-      var userModel = this.model;
-
-      userModel.logIn(inputUsernameEmail, inputPassword, shouldPersist);
+      this.submitLogInDetails();
     },
 
-    loginFailed: function(errorCode) {
-      var errorMessage = '';
-
-      switch (errorCode) {
-        case LoginView.ERR_INVALID_CREDENTIALS:
-        case LoginView.ERR_MISSING_FIELDS:
-          errorMessage = window.polyglot.t('app.invalidusernameorpassword');
-          break;
-        case LoginView.ERR_ACCOUNT_LOCKED:
-          errorMessage = window.polyglot.t('app.accountislocked');
-          break;
-        case LoginView.ERR_TENANT_DISABLED:
-          errorMessage = window.polyglot.t('app.tenantnotenabled');
-          break;
-        case LoginView.ERR_ACCOUNT_INACTIVE:
-          errorMessage = window.polyglot.t('app.accountnotactive');
-          break;
-      }
-
-      $('#login-input-username').addClass('input-error');
+    onLoginFailed: function(errorCode) {
       $('#login-input-password').val('');
-      $('#loginErrorMessage').text(errorMessage);
+      $('#loginErrorMessage').text(this.getErrorMessage(errorCode));
+      $('#login-input-username').addClass('input-error');
       $('#loginError').removeClass('display-none');
-    }
+    },
 
+    onKeyDown: function(e) {
+      this.clearErrorStyling();
+      console.log(e.keyCode, e.key);
+
+      if (e.key === 'Enter') {
+      // if (e.keyCode === 13) {
+        e.preventDefault();
+        this.submitLogInDetails();
+      }
+    }
   }, {
-    ERR_INVALID_CREDENTIALS: 1,
-    ERR_ACCOUNT_LOCKED: 2,
-    ERR_MISSING_FIELDS: 3,
-    ERR_TENANT_DISABLED: 4,
-    ERR_ACCOUNT_INACTIVE: 5,
     template: 'login'
   });
 
   return LoginView;
-
 });
